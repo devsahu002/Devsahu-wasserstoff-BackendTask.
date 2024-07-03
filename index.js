@@ -3,7 +3,7 @@ const loadBalancer = require('./loadBalancer');
 const express = require("express")
 const app = express()
 
-app.use(express.json({}))
+app.use(express.json())
 
 const server1 = express()
 const server2 = express()
@@ -49,7 +49,7 @@ const getRandomEndpoint = () => {
 
 //Below is the code snippet where target server is selected based on the creteria and the selected server handles the req from the load balancer server
 
-app.post("/",(req,res)=>{
+app.use("/",(req,res)=>{
     const serverSelectionMode = req.body.serverSelectionMode || ""
         let targetServer
         switch(serverSelectionMode){
