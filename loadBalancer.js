@@ -1,5 +1,5 @@
 const http = require('http');
-const QueueManager = require('./src/controllers/queueManager');
+const QueueManager = require('./queueManager');
 
 const queueManager = new QueueManager();
 
