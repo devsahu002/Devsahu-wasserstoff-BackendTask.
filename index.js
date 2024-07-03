@@ -49,8 +49,7 @@ const getRandomEndpoint = () => {
 
 //Below is the code snippet where target server is selected based on the creteria and the selected server handles the req from the load balancer server
 
-app.use("/",(req,res)=>{
-    console.log(req.body)
+app.post("/",(req,res)=>{
     const serverSelectionMode = req.body.serverSelectionMode || ""
         let targetServer
         switch(serverSelectionMode){
@@ -63,7 +62,7 @@ app.use("/",(req,res)=>{
                 targetServer = getRandomEndpoint();
                 break
             }
-            case("apiTypeBased"):{
+            case("apiType"):{
                 const {apiType=""} = req.body
                 targetServer = apiEndpoints.find(ep => ep.type === apiType) || getRandomEndpoint();
                 break
