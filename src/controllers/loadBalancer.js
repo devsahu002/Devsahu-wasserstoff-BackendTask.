@@ -90,7 +90,6 @@ const loadBalancer = (req, res) => {
         });
         req.on('end', () => {
             const { apiType, queueType, priority } = JSON.parse(body);
-            res.asd =  Date.now() 
             const request = { apiType, req, res };
             switch (queueType) {
                 case 'FIFO':
