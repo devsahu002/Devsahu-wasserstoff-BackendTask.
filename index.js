@@ -47,21 +47,32 @@ const getRandomEndpoint = () => {
     return apiEndpoints[index];
 };
 
-//Below is the code snippet where main servers are handlind the req from the load balancer server
-app.use("/random",(req,res)=>{
-    const targetServer = getRandomEndpoint();
+//Below is the code snippet where target server is selected based on the creteria and the selected server handles the req from the load balancer server
+
+app.use("/",(req,res)=>{
     console.log(req.body)
-    loadBalancer(req,res,targetServer)
-})
-app.use("/apiTypeBased",(req,res)=>{
-    const {apiType=""} = req.body
-    const targetServer = apiEndpoints.find(ep => ep.type === apiType) || getRandomEndpoint();
-    loadBalancer(req,res,targetServer)
-})
-app.use("/roundRobin",(req,res)=>{
-    const targetServer = targetServer =  apiEndpoints[currentServerIndex];
-    currentServerIndex = (currentServerIndex + 1) % apiEndpoints.length;
-    loadBalancer(req,res,targetServer)
+    const serverSelectionMode = req.body.serverSelectionMode || ""
+        let targetServer
+        switch(serverSelectionMode){
+            case("roundRobin"):{
+                targetServer =  apiEndpoints[currentServerIndex];
+                currentServerIndex = (currentServerIndex + 1) % apiEndpoints.length;
+                break
+            }
+            case("random"):{
+                targetServer = getRandomEndpoint();
+                break
+            }
+            case("apiTypeBased"):{
+                const {apiType=""} = req.body
+                targetServer = apiEndpoints.find(ep => ep.type === apiType) || getRandomEndpoint();
+                break
+            }
+            default:{
+                targetServer = getRandomEndpoint();
+            }
+        }
+        loadBalancer(req,res,targetServer)
 })
 
 // Below are the main server to which our routes will be redirected
