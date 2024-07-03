@@ -83,12 +83,13 @@ const loadBalancer = (req, res) => {
     const { method, url: reqUrl } = req;
     const parsedUrl = url.parse(reqUrl, true);
     const route = parsedUrl.pathname
-    if (method === 'POST' && ["/apiTypeBased","/random","/roundRobin"].includes(route)) {
+    if (["/apiTypeBased","/random","/roundRobin"].includes(route)) {
         let body = '';
         req.on('data', chunk => {
             body += chunk.toString();
         });
-        req.on('end', () => {
+        if(body){
+             req.on('end', () => {
             const { apiType, queueType, priority } = JSON.parse(body);
             const request = { apiType, req, res };
             switch (queueType) {
@@ -104,14 +105,18 @@ const loadBalancer = (req, res) => {
                     res.end('Invalid queue type');
                     return;
             }
-            // res.writeHead(202, { 'Content-Type': 'text/plain' });
-            // res.end('Request accepted');
-
+        
             processQueue(queueType,route);
         });
+        }
+        else{
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('Body Not Found');
+        }
+       
     } else {
         res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('Not Found');
+        res.end('Route Not Found');
     }
 };
 
