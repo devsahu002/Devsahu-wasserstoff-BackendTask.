@@ -1,22 +1,9 @@
 const http = require('http');
-const url = require('url');
 const QueueManager = require('./queueManager');
-
-const apiEndpoints = [
-    { type: 'REST', url: 'http://localhost:3001' },
-    { type: 'GraphQL', url: 'http://localhost:3002' },
-    { type: 'gRPC', url: 'http://localhost:3003' },
-];
-let currentServerIndex = 0 
 
 const queueManager = new QueueManager();
 
-const getRandomEndpoint = () => {
-    const index = Math.floor(Math.random() * apiEndpoints.length);
-    return apiEndpoints[index];
-};
-
-const processQueue = (queueType,route) => {
+const processQueue = (queueType) => {
     let nextRequest;
     switch (queueType) {
         case 'FIFO':
@@ -30,25 +17,7 @@ const processQueue = (queueType,route) => {
     }
 
     if (nextRequest) {
-        let { apiType, req, res } = nextRequest;
-        let targetServer = null
-        switch(route){
-            case "/apiTypeBased":{
-             targetServer = apiEndpoints.find(ep => ep.type === apiType) || getRandomEndpoint();
-                break
-            }
-            case "/random":{
-                targetServer = getRandomEndpoint();
-                break
-            }
-            case "/roundRobin":{
-                targetServer =  apiEndpoints[currentServerIndex];
-                currentServerIndex = (currentServerIndex + 1) % apiEndpoints.length;
-                break
-            }
-            default :
-                break
-        }
+        let { apiType, req, res ,targetServer} = nextRequest;
             const startTime = Date.now();
     
             const proxyReq = http.request(targetServer.url, proxyRes => {
@@ -62,11 +31,11 @@ const processQueue = (queueType,route) => {
                     console.log(analyticsData);
                     console.log(`Queue type: ${queueType}, API type: ${apiType}, Duration: ${duration}ms`);
                     const resFromTargetServer = JSON.parse(responseData)
-                    res.writeHead(proxyRes.statusCode, proxyRes.headers);
-                    res.end(JSON.stringify({
-                        message : resFromTargetServer.message,
+        
+                    res.json({
+                        message: resFromTargetServer.message,
                         analyticsData :analyticsData
-                    }));
+                });
                 });
             });
     
@@ -79,45 +48,21 @@ const processQueue = (queueType,route) => {
     }
 };
 
-const loadBalancer = (req, res) => {
-    const { method, url: reqUrl } = req;
-    const parsedUrl = url.parse(reqUrl, true);
-    const route = parsedUrl.pathname
-    if (["/apiTypeBased","/random","/roundRobin"].includes(route)) {
-        let body = '';
-        req.on('data', chunk => {
-            body += chunk.toString();
-        });
-        if(body){
-             req.on('end', () => {
-            const { apiType, queueType, priority } = JSON.parse(body);
-            const request = { apiType, req, res };
-            switch (queueType) {
-                case 'FIFO':
-                    queueManager.addToFifoQueue(request);
-                    break;
-                case 'PRIORITY':
-                    queueManager.addToPriorityQueue(request, priority);
-                    break;
-                
-                default:
-                    res.writeHead(400, { 'Content-Type': 'text/plain' });
-                    res.end('Invalid queue type');
-                    return;
-            }
-        
-            processQueue(queueType,route);
-        });
-        }
-        else{
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('Body Not Found');
-        }
-       
-    } else {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('Route Not Found');
+const loadBalancer = (req, res,targetServer) => {
+    const { apiType, queueType, priority } = req.body;
+    const request = { apiType, req, res ,targetServer };
+    switch (queueType) {
+        case 'FIFO':
+            queueManager.addToFifoQueue(request);
+            break;
+        case 'PRIORITY':
+            queueManager.addToPriorityQueue(request, priority);
+            break;
+
+        default:
+            res.json({ errorMessage: 'Invalid queue type' });
     }
+    processQueue(queueType);
 };
 
 module.exports = loadBalancer;
