@@ -49,7 +49,7 @@ const processQueue = (queueType) => {
 };
 
 const loadBalancer = (req, res,targetServer) => {
-    const { apiType, queueType, priority } = req.body;
+     const { apiType, queueType, priority=1 } = req.body;  // if priority is not sent from the client side than default priority is 1
     const request = { apiType, req, res ,targetServer };
     switch (queueType) {
         case 'FIFO':
