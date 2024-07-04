@@ -65,9 +65,9 @@ const loadBalancer = (req, res,targetServer) => {
 };
 setInterval(()=>{
     processQueue("FIFO");   
-},50)
+},100)
 setInterval(()=>{
     processQueue("PRIORITY")
-},50);
+},100);
 
 module.exports = loadBalancer;
