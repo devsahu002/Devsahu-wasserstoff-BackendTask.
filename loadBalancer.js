@@ -62,12 +62,7 @@ const loadBalancer = (req, res,targetServer) => {
         default:
             res.json({ errorMessage: 'Invalid queue type' });
     }
+    processQueue(queueType); 
 };
-setInterval(()=>{
-    processQueue("FIFO");   
-},100)
-setInterval(()=>{
-    processQueue("PRIORITY")
-},100);
 
 module.exports = loadBalancer;
